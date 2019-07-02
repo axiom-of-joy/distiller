@@ -10,20 +10,48 @@ import numpy.testing as nptest
 import pytest
 
 
-def run_torch_gru_cell(input_size, hidden_size, batch_size):
+def torch_gru_cell_forward(input_, hx):
+    input_size = input_.shape[-1]
+    hidden_size = hx.shape[-1]
     gru_cell = GRUCell(input_size, hidden_size)
-    input_ = torch.randn(batch_size, input_size)
-    hx = torch.randn(batch_size, hidden_size)
     hx = gru_cell(input_, hx)
     return hx
 
 
-def run_distiller_gru_cell(input_size, hidden_size, batch_size):
+def distiller_gru_cell_forward(input_, hx):
+    input_size = input_.shape[-1]
+    hidden_size = hx.shape[-1]
     gru_cell = DistillerGRUCell(input_size, hidden_size)
-    input_ = torch.randn(batch_size, input_size)
-    hx = torch.randn(batch_size, hidden_size)
     hx, _ = gru_cell(input_, (hx, hx))
     return hx
+
+
+def test_gru_cell_forward():
+    input_size = 10
+    hidden_size = 12
+    batch_size = 3
+    input_ = torch.randn(batch_size, input_size)
+    hx = torch.randn(batch_size, hidden_size)
+    dist_gru_cell = DistillerGRUCell(input_size, hidden_size)
+    torch_gru_cell = dist_gru_cell.to_pytorch_impl()
+    torch_output = torch_gru_cell(input_, hx).detach().numpy()
+    dist_output, _ = dist_gru_cell(input_, (hx, hx))
+    dist_output = dist_output.detach().numpy()
+
+    nptest.assert_array_almost_equal(torch_output, dist_output)
+ 
+
+def _test_convert_to_torch_impl():
+    input_size = 10
+    hidden_size = 12
+    batch_size = 3
+    input_ = torch.randn(batch_size, input_size)
+    dist_gru_cell = DistillerGRUCell(input_size, hidden_size)
+    torch_gru_cell = dist_gru_cell.to_pytorch_impl()
+    print(type(torch_gru_cell.weight_hh))
+    
+
+
 
 @pytest.mark.parametrize(
     'shapes', [
@@ -33,7 +61,7 @@ def run_distiller_gru_cell(input_size, hidden_size, batch_size):
         ([1, 100, 20], [100, 20, 20]),
     ]
 )
-def test_dot_prod(shapes):
+def _test_dot_prod(shapes):
 
     x_shape, w_shape = shapes
 
@@ -47,22 +75,44 @@ def test_dot_prod(shapes):
     nptest.assert_array_almost_equal(Y, T.numpy())
 
 
-def test_thing():
-    pass
-
-def test_other_thing():
-    pass
-
-
 def main():
+    # Create inputs.
     input_size = 10
     hidden_size = 12
     batch_size = 3
-    torch_output = run_torch_gru_cell(input_size, hidden_size, batch_size)
-    dist_output = run_distiller_gru_cell(input_size, hidden_size, batch_size)
+    input_ = torch.randn(batch_size, input_size)
+    hx = torch.randn(batch_size, hidden_size)
+    torch_output = torch_gru_cell_forward(input_, hx)
+    dist_output = distiller_gru_cell_forward(input_, hx)
     print(torch_output.shape)
     print(dist_output.shape)
 
 
+def main2():
+    # Create inputs.
+    input_size = 10
+    hidden_size = 12
+    batch_size = 3
+    torch_gru_cell = GRUCell(input_size, hidden_size)
+    dist_gru_cell = DistillerGRUCell(input_size, hidden_size)
+    torch_gru_cell = dist_gru_cell.to_pytorch_impl()
+    print(type(dist_gru_cell))
+    print(type(torch_gru_cell))
+    #print(torch_gru_cell.weight_ih.shape)
+    #torch_gru_cell.weight_hh
+    #torch_gru_cell.bias_ih
+    #torch_gru_cell.bias_hh
+
+#    input_ = torch.randn(batch_size, input_size)
+#    hx = torch.randn(batch_size, hidden_size)
+#    torch_output = torch_gru_cell_forward(input_, hx)
+#    dist_output = distiller_gru_cell_forward(input_, hx)
+#    print(torch_output.shape)
+#    print(dist_output.shape)
+
+
+def main3():
+    pass
+
 if __name__ == "__main__":
-    main()
+    main2()

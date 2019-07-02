@@ -64,8 +64,8 @@ class DistillerGRUCell(nn.Module):
         if h is None:
             h = self.init_hidden(x_bsz, device=x_device)
         
-        h_prev = h
-        fc_gate_x_, fc_gate_h_ = self.fc_gate_x_(x), self.fc_gate_h_(h_prev)
+        h_prev, _ = h
+        fc_gate_x_, fc_gate_h_ = self.fc_gate_x(x), self.fc_gate_h(h_prev)
         r_x, z_x, n_x = torch.chunk(fc_gate_x_, 3, dim=1)
         r_h, z_h, n_h = torch.chunk(fc_gate_h_, 3, dim=1)
         r, z = self.eltwiseadd_gate(r_x, r_h), self.eltwiseadd_gate(z_x, z_h)
@@ -85,12 +85,12 @@ class DistillerGRUCell(nn.Module):
             self.eltwisemult_gate(one_minus_z, n),
             self.eltwisemult_gate(z, h_prev)
         )
-        return h
+        return h, h
 
     # This has been changed, just removed cell state in return.
     def init_hidden(self, batch_size, device='cuda:0'):
         h_0 = torch.zeros(batch_size, self.hidden_size).to(device)
-        return h_0
+        return h_0, h_0
 
     # This function has been changed.
     def init_weights(self):

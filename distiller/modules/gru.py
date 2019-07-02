@@ -40,11 +40,9 @@ class DistillerGRUCell(nn.Module):
         self.hidden_size = hidden_size
         self.bias = bias
 
-        # Treat r, z as one single object and n as a separate object.
-        self.fc_gate_x_rz = nn.Linear(input_size, hidden_size * 2, bias=bias)
-        self.fc_gate_x_n = nn.Linear(input_size, hidden_size, bias=bias)
-        self.fc_gate_h_rz = nn.Linear(hidden_size, hidden_size * 2, bias=bias)
-        self.fc_gate_h_n = nn.Linear(hidden_size, hidden_size, bias=bias)
+        # Treat r, z, and n as one single object.
+        self.fc_gate_x = nn.Linear(input_size, hidden_size * 3, bias=bias)
+        self.fc_gate_h = nn.Linear(hidden_size, hidden_size * 3, bias=bias)
         self.eltwiseadd_gate = EltwiseAdd()
         self.eltwisemult_gate = EltwiseMult()
         # Apply activations separately:
@@ -67,12 +65,14 @@ class DistillerGRUCell(nn.Module):
             h = self.init_hidden(x_bsz, device=x_device)
         
         h_prev = h
-        fc_gate_rz = self.eltwiseadd_gate(self.fc_gate_x_rz(x), self.fc_gate_h_rz(h_prev))
-        r, z = torch.chunk(fc_gate_rz, 2, dim=1)
+        fc_gate_x_, fc_gate_h_ = self.fc_gate_x_(x), self.fc_gate_h_(h_prev)
+        r_x, z_x, n_x = torch.chunk(fc_gate_x_, 3, dim=1)
+        r_h, z_h, n_h = torch.chunk(fc_gate_h_, 3, dim=1)
+        r, z = self.eltwiseadd_gate(r_x, r_h), self.eltwiseadd_gate(z_x, z_h)
         r, z = self.act_r(r), self.act_z(z)
         n = self.eltwiseadd_gate(
-            self.fc_gate_x_n(x),
-            self.eltwisemult_gate(r, self.fc_gate_h_n(h_prev))
+            n_x,
+            self.eltwisemult_gate(r, n_h)
         )
         n = self.act_n(n)
 
@@ -95,12 +95,11 @@ class DistillerGRUCell(nn.Module):
     # This function has been changed.
     def init_weights(self):
         initrange = 1 / np.sqrt(self.hidden_size)
-        self.fc_gate_x_rz.weight.data.uniform_(-initrange, initrange)
-        self.fc_gate_x_n.weight.data.uniform_(-initrange, initrange)
-        self.fc_gate_h_rz.weight.data.uniform_(-initrange, initrange)
-        self.fc_gate_h_n.weight.data.uniform_(-initrange, initrange)
+        self.fc_gate_x.weight.data.uniform_(-initrange, initrange)
+        self.fc_gate_h.weight.data.uniform_(-initrange, initrange)
  
 
+    # Didn't have to change this.
     def to_pytorch_impl(self):
         module = nn.GRUCell(self.input_size, self.hidden_size, self.bias)
         module.weight_hh, module.weight_ih = \
@@ -127,16 +126,17 @@ class DistillerGRUCell(nn.Module):
         return "%s(%d, %d)" % (self.__class__.__name__, self.input_size, self.hidden_size)
 
 
+# Didn't change this, not sure if I need to. The end looks weird.
 def process_sequence_wise(cell, x, h=None):
     """
-    Process the entire sequence through an GRUCell.
+    Process the entire sequence through a GRUCell.
     Args:
          cell (DistillerGRUCell): the cell.
          x (torch.Tensor): the input
-         h (tuple of torch.Tensor-s): the hidden states of the GRUCell.
+         h (tuple of torch.Tensor-s): the hidden state of the GRUCell.
     Returns:
          y (torch.Tensor): the output
-         h (tuple of torch.Tensor-s): the new hidden states of the GRUCell.
+         h (tuple of torch.Tensor-s): the new hidden state of the GRUCell.
     """
     results = []
     for step in x:
@@ -146,6 +146,7 @@ def process_sequence_wise(cell, x, h=None):
     return torch.stack(results), h
 
 
+# I haven't changed this function, but I don't think it should be necessary in the GRU.
 def _repackage_hidden_unidirectional(h):
     """
     Repackages the hidden state into nn.GRU format. (unidirectional use)
@@ -155,6 +156,7 @@ def _repackage_hidden_unidirectional(h):
     return torch.stack(h_all, 0), torch.stack(c_all, 0)
 
 
+# I also don't know if this should be necessary.
 def _repackage_hidden_bidirectional(h_result):
     """
     Repackages the hidden state into nn.GRU format. (bidirectional use)

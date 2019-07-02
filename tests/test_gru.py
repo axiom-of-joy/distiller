@@ -8,6 +8,7 @@ from distiller.modules.gru import DistillerGRUCell, DistillerGRU
 import numpy as np
 import numpy.testing as nptest
 import pytest
+from random import randrange
 
 
 def torch_gru_cell_forward(input_, hx):
@@ -26,10 +27,12 @@ def distiller_gru_cell_forward(input_, hx):
     return hx
 
 
-def test_gru_cell_forward():
-    input_size = 10
-    hidden_size = 12
-    batch_size = 3
+@pytest.mark.parametrize("input_size,hidden_size,batch_size", [
+    (1231, 3492, 39),
+    (3492, 346, 349),
+    (349, 423, 394),
+])
+def test_gru_cell_forward(input_size, hidden_size, batch_size):
     input_ = torch.randn(batch_size, input_size)
     hx = torch.randn(batch_size, hidden_size)
     dist_gru_cell = DistillerGRUCell(input_size, hidden_size)
@@ -50,29 +53,6 @@ def _test_convert_to_torch_impl():
     torch_gru_cell = dist_gru_cell.to_pytorch_impl()
     print(type(torch_gru_cell.weight_hh))
     
-
-
-
-@pytest.mark.parametrize(
-    'shapes', [
-        ([1, 100], [100, 100]),
-        ([100, 100], [100, 100]),
-        ([1, 100], [100, 20]),
-        ([1, 100, 20], [100, 20, 20]),
-    ]
-)
-def _test_dot_prod(shapes):
-
-    x_shape, w_shape = shapes
-
-    x = np.random.rand(*x_shape)
-    w = np.random.rand(*w_shape)
-
-    T = torch.mm(torch.tensor(x), torch.tensor(w))
-
-    Y = my_custom_dot(x, w)
-
-    nptest.assert_array_almost_equal(Y, T.numpy())
 
 
 def main():
@@ -110,9 +90,6 @@ def main2():
 #    print(torch_output.shape)
 #    print(dist_output.shape)
 
-
-def main3():
-    pass
 
 if __name__ == "__main__":
     main2()

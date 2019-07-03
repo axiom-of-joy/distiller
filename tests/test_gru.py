@@ -36,12 +36,13 @@ def test_gru_cell_forward(input_size, hidden_size, batch_size):
     (3492, 346, 349),
     (349, 423, 394),
 ])
-def test_lstm_cell_forward(input_size, hidden_size, batch_size):
+def test_torch_lstm_cell_forward(input_size, hidden_size, batch_size):
     input_ = torch.randn(batch_size, input_size)
     hx = torch.randn(batch_size, hidden_size)
     dist_lstm_cell = DistillerLSTMCell(input_size, hidden_size)
     torch_lstm_cell = dist_lstm_cell.to_pytorch_impl()
-    torch_output = torch_lstm_cell(input_, hx).detach().numpy()
+    torch_output, _ = torch_lstm_cell(input_, (hx, hx))
+    torch_output = torch_output.detach().numpy()
     dist_output, _ = dist_lstm_cell(input_, (hx, hx))
     dist_output = dist_output.detach().numpy()
 
@@ -55,6 +56,9 @@ def test_lstm_cell_forward(input_size, hidden_size, batch_size):
     (349, 423, 394),
 ])
 def test_torch_lstm_gru_cell(input_size, hidden_size, batch_size):
+    '''
+    A test to make sure I am using the API correctly for both torch implementations.
+    '''
     input_ = torch.randn(batch_size, input_size)
     hx = torch.randn(batch_size, hidden_size)
     gru_cell = GRUCell(input_size, hidden_size)
@@ -74,7 +78,7 @@ def _test_convert_to_torch_impl():
     print(type(torch_gru_cell.weight_hh))
     
 
-
+# Call these main scripts with python script_name.py
 def main():
     # Create inputs.
     input_size = 10
@@ -156,7 +160,6 @@ def main5():
     gru_output = gru_cell(input_, hx)
     lstm_output = lstm_cell(input_, (hx, hx))
 
-
      
 if __name__ == "__main__":
-    main5()
+    main4()

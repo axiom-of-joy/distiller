@@ -60,20 +60,12 @@ class DistillerGRUCell(nn.Module):
         """
         Implemented as defined in https://pytorch.org/docs/stable/nn.html#grucell.
         """
-        #FIXME
-        #import pdb
-        #pdb.set_trace()
-        #
         x_bsz, x_device = x.size(1), x.device
         if h is None:
             h = self.init_hidden(x_bsz, device=x_device)
         
         h_prev, _ = h
         fc_gate_x_, fc_gate_h_ = self.fc_gate_x(x), self.fc_gate_h(h_prev)
-        #FIXME
-        #import pdb
-        #pdb.set_trace()
-        #
         r_x, z_x, n_x = torch.chunk(fc_gate_x_, 3, dim=1)
         r_h, z_h, n_h = torch.chunk(fc_gate_h_, 3, dim=1)
         r, z = self.eltwiseadd_gate(r_x, r_h), self.eltwiseadd_gate(z_x, z_h)

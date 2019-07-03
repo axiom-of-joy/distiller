@@ -1,30 +1,14 @@
-# pytest -vv script_name.py
+# pytest -vv -s script_name.py
 
 import torch
 import torch.nn as nn
 from torch.nn.modules.rnn import GRU, GRUCell
 import distiller
-from distiller.modules.gru import DistillerGRUCell, DistillerGRU
+from distiller.modules.gru2 import DistillerGRUCell, DistillerGRU
 import numpy as np
 import numpy.testing as nptest
 import pytest
 from random import randrange
-
-
-def torch_gru_cell_forward(input_, hx):
-    input_size = input_.shape[-1]
-    hidden_size = hx.shape[-1]
-    gru_cell = GRUCell(input_size, hidden_size)
-    hx = gru_cell(input_, hx)
-    return hx
-
-
-def distiller_gru_cell_forward(input_, hx):
-    input_size = input_.shape[-1]
-    hidden_size = hx.shape[-1]
-    gru_cell = DistillerGRUCell(input_size, hidden_size)
-    hx, _ = gru_cell(input_, (hx, hx))
-    return hx
 
 
 @pytest.mark.parametrize("input_size,hidden_size,batch_size", [
@@ -91,5 +75,34 @@ def main2():
 #    print(dist_output.shape)
 
 
+# Testing out the torch GRU implementation.
+def main3():
+    input_size = 10
+    hidden_size = 20
+    num_layers = 2
+    sequence_len = 5
+    batch_size = 3
+    num_directions = 1
+    torch_gru = GRU(input_size, hidden_size, num_layers)
+    input_ = torch.randn(sequence_len, batch_size, input_size)
+    h0 = torch.randn(num_layers * num_directions, batch_size, hidden_size)
+    output, hn = torch_gru(input_, h0)
+    print(output.shape)
+    print(hn.shape)
+
+# Testing out the Distiller GRU Implementation.
+def main4():
+    input_size = 10
+    hidden_size = 20
+    num_layers = 2
+    sequence_len = 5
+    batch_size = 3
+    num_directions = 1
+    dist_gru = DistillerGRU(input_size, hidden_size, num_layers)
+    input_ = torch.randn(sequence_len, sequence_len, input_size)
+    h0 = torch.randn(num_layers * num_directions, batch_size, hidden_size)
+    output, hn = dist_gru(input_, h0)
+
+     
 if __name__ == "__main__":
-    main2()
+    main4()

@@ -126,17 +126,16 @@ class DistillerGRUCell(nn.Module):
         return "%s(%d, %d)" % (self.__class__.__name__, self.input_size, self.hidden_size)
 
 
-# Didn't change this, not sure if I need to. The end looks weird.
 def process_sequence_wise(cell, x, h=None):
     """
-    Process the entire sequence through a GRUCell.
+    Process the entire sequence through an GRUCell.
     Args:
          cell (DistillerGRUCell): the cell.
          x (torch.Tensor): the input
-         h (tuple of torch.Tensor-s): the hidden state of the GRUCell.
+         h (tuple of torch.Tensor-s): the hidden states of the GRUCell.
     Returns:
          y (torch.Tensor): the output
-         h (tuple of torch.Tensor-s): the new hidden state of the GRUCell.
+         h (tuple of torch.Tensor-s): the new hidden states of the GRUCell.
     """
     results = []
     for step in x:
@@ -146,7 +145,6 @@ def process_sequence_wise(cell, x, h=None):
     return torch.stack(results), h
 
 
-# I haven't changed this function, but I don't think it should be necessary in the GRU.
 def _repackage_hidden_unidirectional(h):
     """
     Repackages the hidden state into nn.GRU format. (unidirectional use)
@@ -156,7 +154,6 @@ def _repackage_hidden_unidirectional(h):
     return torch.stack(h_all, 0), torch.stack(c_all, 0)
 
 
-# I also don't know if this should be necessary.
 def _repackage_hidden_bidirectional(h_result):
     """
     Repackages the hidden state into nn.GRU format. (bidirectional use)

@@ -62,16 +62,16 @@ class DistillerLSTMCell(nn.Module):
         """
         Implemented as defined in https://pytorch.org/docs/stable/nn.html#lstmcell.
         """
+        #FIXME
+        #import pudb
+        #pudb.set_trace()
+        #
         x_bsz, x_device = x.size(1), x.device
         if h is None:
             h = self.init_hidden(x_bsz, device=x_device)
         
         h_prev, c_prev = h
         fc_gate = self.eltwiseadd_gate(self.fc_gate_x(x), self.fc_gate_h(h_prev))
-        #FIXME
-        #import pdb
-        #pdb.set_trace()
-        #
         i, f, g, o = torch.chunk(fc_gate, 4, dim=1)
         i, f, g, o = self.act_i(i), self.act_f(f), self.act_g(g), self.act_o(o)
         cf, ci = self.eltwisemult_cell_forget(f, c_prev), self.eltwisemult_cell_input(i, g)

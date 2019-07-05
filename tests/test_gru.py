@@ -64,10 +64,8 @@ def test_distiller_gru_forward(input_size, hidden_size, num_layers, sequence_len
 
     input_ = torch.randn(sequence_len, batch_size, input_size)
     h0 = torch.randn(num_layers * num_directions, batch_size, hidden_size)
-    # These lines are for the old (LSTM-like) API.
     dist_output, dist_hn = dist_gru(input_, (h0, h0))
     dist_h, dist_c = dist_hn
-    #dist_output, dist_h = dist_gru(input_, h0)
     torch_output, torch_h = torch_gru(input_, h0)
 
     dist_output = dist_output.detach().numpy()

@@ -56,7 +56,7 @@ class DistillerGRUCell(nn.Module):
         self.init_weights()
 
     # This whole function has been changed.
-    def _forward(self, x, h=None):
+    def forward(self, x, h=None):
         """
         Implemented as defined in https://pytorch.org/docs/stable/nn.html#grucell.
         """
@@ -252,13 +252,6 @@ class DistillerGRU(nn.Module):
         self.dropout = nn.Dropout(dropout)
         self.dropout_factor = dropout
 
-    # I created this function from scratch to make the API match the torch GRU implementation.
-    def _forward(self, x, h=None):
-        y, hc = self._forward(x, (h, h) if h else None)
-        h, _ = hc
-        return y, h
-
-    # This used to be forward.
     def forward(self, x, h=None):
         is_packed_seq = isinstance(x, nn.utils.rnn.PackedSequence)
         if is_packed_seq:

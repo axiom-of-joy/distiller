@@ -16,14 +16,7 @@ from random import randrange, randint
     [tuple(randint(5, 20) for _ in range(5)) for _ in range(4)] # Produces 4 random tuples of length 5.
 )
 def test_distiller_lstm_forward(input_size, hidden_size, num_layers, sequence_len, batch_size):
-    #input_size = 11
-    #hidden_size = 7
-    #num_layers = 2
-    #sequence_len = 5
-    #batch_size = 3
-    num_directions = 1
-    #dist_lstm = DistillerLSTM(input_size, hidden_size, num_layers)
-    #torch_lstm = dist_lstm.to_pytorch_impl()
+    num_directions = 1  # Uni-directional LSTM.
     torch_lstm = LSTM(input_size, hidden_size, num_layers)
     dist_lstm = convert_model_to_distiller_lstm(torch_lstm)
     
@@ -50,22 +43,17 @@ def test_distiller_lstm_forward(input_size, hidden_size, num_layers, sequence_le
     [tuple(randint(5, 20) for _ in range(5)) for _ in range(4)] # Produces 4 random tuples of length 5.
 )
 def test_distiller_gru_forward(input_size, hidden_size, num_layers, sequence_len, batch_size):
-    #input_size = 11
-    #hidden_size = 7
-    #num_layers = 2
-    #sequence_len = 5
-    #batch_size = 3
     num_directions = 1
-    #dist_gru = DistillerGRU(input_size, hidden_size, num_layers)
-    #torch_gru = dist_gru.to_pytorch_impl()
 
     torch_gru = GRU(input_size, hidden_size, num_layers)
     dist_gru = convert_model_to_distiller_gru(torch_gru)
 
     input_ = torch.randn(sequence_len, batch_size, input_size)
     h0 = torch.randn(num_layers * num_directions, batch_size, hidden_size)
-    dist_output, dist_hn = dist_gru(input_, (h0, h0))
-    dist_h, dist_c = dist_hn
+    # These lines use the old LSTM-like API.
+    #dist_output, dist_hn = dist_gru(input_, (h0, h0))
+    #dist_h, dist_c = dist_hn
+    dist_output, dist_h = dist_gru(input_, h0)
     torch_output, torch_h = torch_gru(input_, h0)
 
     dist_output = dist_output.detach().numpy()

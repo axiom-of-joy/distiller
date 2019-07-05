@@ -252,7 +252,14 @@ class DistillerGRU(nn.Module):
         self.dropout = nn.Dropout(dropout)
         self.dropout_factor = dropout
 
+    # A new forward function to match the torch GRU API.
     def forward(self, x, h=None):
+        y, hc = self._forward(x, (h, h) if h is not None else None)
+        h, _ = hc
+        return y, h
+
+    # The original forward function with the LSTM-like API.
+    def _forward(self, x, h=None):
         is_packed_seq = isinstance(x, nn.utils.rnn.PackedSequence)
         if is_packed_seq:
             return self.packed_sequence_forward(x, h)

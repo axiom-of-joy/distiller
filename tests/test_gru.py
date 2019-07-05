@@ -4,23 +4,28 @@ import torch
 import torch.nn as nn
 from torch.nn.modules.rnn import GRU, GRUCell, LSTM, LSTMCell
 import distiller
-from distiller.modules.gru import DistillerGRUCell, DistillerGRU
-from distiller.modules.rnn import DistillerLSTMCell, DistillerLSTM
+from distiller.modules.gru import DistillerGRUCell, DistillerGRU, convert_model_to_distiller_gru
+from distiller.modules.rnn import DistillerLSTMCell, DistillerLSTM, convert_model_to_distiller_lstm
 import numpy as np
 import numpy.testing as nptest
 import pytest
-from random import randrange
+from random import randrange, randint
 
 
-def test_distiller_lstm_forward():
-    input_size = 11
-    hidden_size = 7
-    num_layers = 2
-    sequence_len = 5
-    batch_size = 3
+@pytest.mark.parametrize("input_size,hidden_size,num_layers,sequence_len,batch_size",
+    [tuple(randint(5, 20) for _ in range(5)) for _ in range(4)] # Produces 4 random tuples of length 5.
+)
+def test_distiller_lstm_forward(input_size, hidden_size, num_layers, sequence_len, batch_size):
+    #input_size = 11
+    #hidden_size = 7
+    #num_layers = 2
+    #sequence_len = 5
+    #batch_size = 3
     num_directions = 1
-    dist_lstm = DistillerLSTM(input_size, hidden_size, num_layers)
-    torch_lstm = dist_lstm.to_pytorch_impl()
+    #dist_lstm = DistillerLSTM(input_size, hidden_size, num_layers)
+    #torch_lstm = dist_lstm.to_pytorch_impl()
+    torch_lstm = LSTM(input_size, hidden_size, num_layers)
+    dist_lstm = convert_model_to_distiller_lstm(torch_lstm)
     
     # Display types.
     print(type(dist_lstm))
@@ -41,15 +46,22 @@ def test_distiller_lstm_forward():
 
     nptest.assert_array_almost_equal(torch_output, dist_output)
 
-def test_distiller_gru_forward():
-    input_size = 11
-    hidden_size = 7
-    num_layers = 2
-    sequence_len = 5
-    batch_size = 3
+@pytest.mark.parametrize("input_size,hidden_size,num_layers,sequence_len,batch_size",
+    [tuple(randint(5, 20) for _ in range(5)) for _ in range(4)] # Produces 4 random tuples of length 5.
+)
+def test_distiller_gru_forward(input_size, hidden_size, num_layers, sequence_len, batch_size):
+    #input_size = 11
+    #hidden_size = 7
+    #num_layers = 2
+    #sequence_len = 5
+    #batch_size = 3
     num_directions = 1
-    dist_gru = DistillerGRU(input_size, hidden_size, num_layers)
-    torch_gru = dist_gru.to_pytorch_impl()
+    #dist_gru = DistillerGRU(input_size, hidden_size, num_layers)
+    #torch_gru = dist_gru.to_pytorch_impl()
+
+    torch_gru = GRU(input_size, hidden_size, num_layers)
+    dist_gru = convert_model_to_distiller_gru(torch_gru)
+
     input_ = torch.randn(sequence_len, batch_size, input_size)
     h0 = torch.randn(num_layers * num_directions, batch_size, hidden_size)
     dist_output, dist_hn = dist_gru(input_, (h0, h0))

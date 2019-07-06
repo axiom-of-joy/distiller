@@ -85,10 +85,15 @@ class DistillerGRUCell(nn.Module):
         n = self.act_n(n)
 
         # Construct h.
-        minus_ones = torch.empty(z.shape)
+        # FIXME
+        #import pudb
+        #pudb.set_trace()
+        #
+        minus_ones = torch.empty(z.shape, device=z.device)
         minus_ones.fill_(-1.0)
         minus_z = self.eltwisemult_gate(minus_ones, z)
-        one_minus_z = self.eltwiseadd_gate(torch.ones(z.shape), minus_z)
+        plus_ones = torch.ones(z.shape, device=minus_z.device)
+        one_minus_z = self.eltwiseadd_gate(plus_ones, minus_z)
         h = self.eltwiseadd_gate(
             self.eltwisemult_gate(one_minus_z, n),
             self.eltwisemult_gate(z, h_prev)

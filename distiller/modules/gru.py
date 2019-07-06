@@ -49,9 +49,6 @@ class DistillerGRUCell(nn.Module):
         self.act_r = nn.Sigmoid()
         self.act_z = nn.Sigmoid()
         self.act_n = nn.Tanh()
-        # Calculate cell:
-        self.eltwisemult_cell = EltwiseMult()
-        self.eltwiseadd_cell = EltwiseAdd()
         # Calculate hidden:
         self.init_weights()
 

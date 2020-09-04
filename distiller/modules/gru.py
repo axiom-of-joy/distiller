@@ -1,3 +1,20 @@
+"""
+A weight-quantization sub-module for instances of torch.nn.modules.GRU.
+
+This sub-module is used for post-training weight quantization of GRUs.
+It is adapted from the rnn.py sub-module for quantizing LSTMs. The main
+changes are to the DistillerGRUCell class (adapted from the
+DistillerLSTMCell class) to reflect the equations at
+https://pytorch.org/docs/stable/nn.html#grucell. In addition,
+DistillerGRU was adapted from DistillerLSTM to reflect the differences
+between LSTMs and GRUs (i.e., the lack of a cell state in the case of
+GRUs).
+
+Tests for this script may be found in test/test_gru.py.
+
+Author: Alexander Song
+"""
+
 #
 # Copyright (c) 2019 Intel Corporation
 #
@@ -52,25 +69,16 @@ class DistillerGRUCell(nn.Module):
         # Calculate hidden:
         self.init_weights()
 
-    # This whole function has been changed.
     def forward(self, x, h=None):
         """
         Implemented as defined in https://pytorch.org/docs/stable/nn.html#grucell.
         """
-        #FIXME
-        #import pudb
-        #pudb.set_trace()
-        #
         x_bsz, x_device = x.size(1), x.device
         if h is None:
             h = self.init_hidden(x_bsz, device=x_device)
         
         h_prev, _ = h
         fc_gate_x_, fc_gate_h_ = self.fc_gate_x(x), self.fc_gate_h(h_prev)
-        #FIXME
-        #import pdb
-        #pdb.set_trace()
-        #
         r_x, z_x, n_x = torch.chunk(fc_gate_x_, 3, dim=1)
         r_h, z_h, n_h = torch.chunk(fc_gate_h_, 3, dim=1)
         r, z = self.eltwiseadd_gate(r_x, r_h), self.eltwiseadd_gate(z_x, z_h)
@@ -82,10 +90,6 @@ class DistillerGRUCell(nn.Module):
         n = self.act_n(n)
 
         # Construct h.
-        # FIXME
-        #import pudb
-        #pudb.set_trace()
-        #
         minus_ones = torch.empty(z.shape, device=z.device)
         minus_ones.fill_(-1.0)
         minus_z = self.eltwisemult_gate(minus_ones, z)
@@ -97,19 +101,15 @@ class DistillerGRUCell(nn.Module):
         )
         return h, h
 
-    # This has been changed, just removed cell state in return.
     def init_hidden(self, batch_size, device='cuda:0'):
         h_0 = torch.zeros(batch_size, self.hidden_size).to(device)
         return h_0, h_0
 
-    # This function has been changed.
     def init_weights(self):
         initrange = 1 / np.sqrt(self.hidden_size)
         self.fc_gate_x.weight.data.uniform_(-initrange, initrange)
         self.fc_gate_h.weight.data.uniform_(-initrange, initrange)
- 
 
-    # Didn't have to change this.
     def to_pytorch_impl(self):
         module = nn.GRUCell(self.input_size, self.hidden_size, self.bias)
         module.weight_hh, module.weight_ih = \
@@ -254,13 +254,13 @@ class DistillerGRU(nn.Module):
         self.dropout = nn.Dropout(dropout)
         self.dropout_factor = dropout
 
-    # A new forward function to match the torch GRU API.
+    # A new forward function to match the torch GRU signature.
     def forward(self, x, h=None):
         y, hc = self._forward(x, (h, h) if h is not None else None)
         h, _ = hc
         return y, h
 
-    # The original forward function with the LSTM-like API.
+    # The original forward function with the LSTM-like function signature.
     def _forward(self, x, h=None):
         is_packed_seq = isinstance(x, nn.utils.rnn.PackedSequence)
         if is_packed_seq:
